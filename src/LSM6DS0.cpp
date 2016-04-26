@@ -1,17 +1,65 @@
 #include <LSM6DS0.h>
-
+#include <Wire.h>
 
 #define address LSM6DS0_XG_MEMS_ADDRESS
 
 
 void LSM6DS0::init()
 {
-	/* Conversion mode selection */
-	writeReg(LSM6DS0_XG_CTRL_REG1_G, uint8_t(0x78));
-	/* Output data rate selection */
-	writeReg(LSM6DS0_XG_CTRL_REG4,uint8_t(0x38));
-	writeReg(LSM6DS0_XG_CTRL_REG6_XL,uint8_t(0x60));
-	writeReg(LSM6DS0_XG_CTRL_REG5_XL,uint8_t(0x38));
+
+
+/******* Gyroscope init *******/
+
+	uint8_t tmp1 = readReg(LSM6DS0_XG_CTRL_REG1_G);
+	/* Output Data Rate selection */
+    tmp1 &= ~(LSM6DS0_G_ODR_MASK);
+    tmp1 |= LSM6DS0_G_ODR_119HZ;
+	/* Full scale selection */
+	tmp1 &= ~(LSM6DS0_G_FS_MASK);
+	tmp1 |= LSM6DS0_G_FS_2000;
+	writeReg(LSM6DS0_XG_CTRL_REG1_G, tmp1);
+
+	tmp1 = readReg(LSM6DS0_XG_CTRL_REG4);
+	/* Enable X axis selection */
+    tmp1 &= ~(LSM6DS0_G_XEN_MASK);
+    tmp1 |= LSM6DS0_G_XEN_ENABLE;
+    /* Enable Y axis selection */
+    tmp1 &= ~(LSM6DS0_G_YEN_MASK);
+    tmp1 |= LSM6DS0_G_YEN_ENABLE;
+    /* Enable Z axis selection */
+    tmp1 &= ~(LSM6DS0_G_ZEN_MASK);
+    tmp1 |= LSM6DS0_G_ZEN_ENABLE;
+	writeReg(LSM6DS0_XG_CTRL_REG4,tmp1);
+
+/******************************/
+/***** Accelerometer init *****/
+
+	tmp1 = readReg(LSM6DS0_XG_CTRL_REG6_XL);
+	/* Output Data Rate selection */
+	tmp1 &= ~(LSM6DS0_XL_ODR_MASK);
+	tmp1 |= LSM6DS0_XL_ODR_119HZ;
+
+	/* Full scale selection */
+	tmp1 &= ~(LSM6DS0_XL_FS_MASK);
+	tmp1 |= LSM6DS0_XL_FS_2G;
+	writeReg(LSM6DS0_XG_CTRL_REG6_XL,tmp1);
+
+	tmp1 = readReg(LSM6DS0_XG_CTRL_REG5_XL);
+	/* Enable X axis selection */
+	tmp1 &= ~(LSM6DS0_XL_XEN_MASK);
+	tmp1 |= LSM6DS0_XL_XEN_ENABLE;
+
+	/* Enable Y axis selection */
+	tmp1 &= ~(LSM6DS0_XL_YEN_MASK);
+	tmp1 |= LSM6DS0_XL_YEN_ENABLE;
+
+	/* Enable Z axis selection */
+	tmp1 &= ~(LSM6DS0_XL_ZEN_MASK);
+	tmp1 |= LSM6DS0_XL_ZEN_ENABLE;
+	writeReg(LSM6DS0_XG_CTRL_REG5_XL,tmp1);
+
+/******************************/
+
 }
 
 int16_t LSM6DS0::gyro_getAxesXRaw(void)
@@ -89,15 +137,10 @@ int16_t LSM6DS0::acc_getAxesZ(void)
 float LSM6DS0::getGyroScale(void){
 
   	float sensitivity=0;
-	Wire.beginTransmission(address);
-	Wire.write(LSM6DS0_XG_CTRL_REG1_G);
-	Wire.endTransmission();
-	Wire.requestFrom(address, (byte)1);
-	uint8_t scale = Wire.read();
-	Wire.endTransmission();
-    Serial.println(scale);
+	uint8_t scale = readReg(LSM6DS0_XG_CTRL_REG1_G);
+	scale &= LSM6DS0_G_FS_MASK;
     switch(scale)
-      {
+	{
 		case LSM6DS0_G_FS_245:
 			sensitivity = 8.75;
 			break;
@@ -107,22 +150,17 @@ float LSM6DS0::getGyroScale(void){
 		case LSM6DS0_G_FS_2000:
 			sensitivity = 70;
 			break;
-     }
-	 return sensitivity;
+    }
+	return sensitivity;
 }
 
 float LSM6DS0::getAccScale(void){
 
   	float sensitivity=0;
-	Wire.beginTransmission(address);
-	Wire.write(LSM6DS0_XG_CTRL_REG6_XL);
-	Wire.endTransmission();
-	Wire.requestFrom(address, (byte)1);
-	uint8_t acc_scale = Wire.read();
-	Wire.endTransmission();
-    Serial.println(acc_scale);
+	uint8_t acc_scale = readReg(LSM6DS0_XG_CTRL_REG6_XL);
+    acc_scale &= LSM6DS0_XL_FS_MASK;
     switch(acc_scale)
-      {
+	{
 		case LSM6DS0_XL_FS_2G:
 			sensitivity = 0.061;
 			break;
@@ -132,26 +170,37 @@ float LSM6DS0::getAccScale(void){
 		case LSM6DS0_XL_FS_8G:
 			sensitivity = 0.244;
 			break;
-     }
-	 return sensitivity;
+	}
+	return sensitivity;
 }
 // writes register
 void LSM6DS0::writeReg(int reg, byte value)
 {
-  Wire.beginTransmission(address);
-  Wire.write(reg);
-  Wire.write(value);
-  Wire.endTransmission();
+	Wire.beginTransmission(address);
+	Wire.write(reg);
+	Wire.write(value);
+	Wire.endTransmission();
+}
+ // read register unit8_t
+int8_t LSM6DS0::readReg(int reg)
+{
+	Wire.beginTransmission(address);
+	Wire.write(reg);
+	Wire.endTransmission();
+	Wire.requestFrom(address,(byte)1);
+	uint8_t read = Wire.read();
+	return read;
 }
 
+ // read register unit16_t
 int16_t LSM6DS0::readReg(int reg, byte num)
 {
-  Wire.beginTransmission(address);
-  Wire.write(reg);
-  Wire.endTransmission();
-  Wire.requestFrom(address, num);
-  while (Wire.available() < num);
-  uint8_t ml = Wire.read();
-  uint8_t mh = Wire.read();
-  return (int16_t)(mh << 8 | ml);
+	Wire.beginTransmission(address);
+	Wire.write(reg);
+	Wire.endTransmission();
+	Wire.requestFrom(address, num);
+	while (Wire.available() < num);
+	uint8_t ml = Wire.read();
+	uint8_t mh = Wire.read();
+	return (int16_t)(mh << 8 | ml);
 }

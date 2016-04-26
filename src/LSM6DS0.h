@@ -1,6 +1,4 @@
-
 #include <Arduino.h> // for byte data type
-
 
 /***************************************** COMMON REGISTERS ********************************************/
 
@@ -268,11 +266,6 @@
 
 #define LSM6DS0_XL_XEN_MASK                             ((uint8_t)0x08)
 
-/**
- * @}
- */
-
-
 /** @defgroup LSM6DS0 Accel selftest en/dis - LSM6DS0_XG_CTRL_REG10
  * @{
  */
@@ -283,7 +276,6 @@
 
 class LSM6DS0
 {
-
 	public:
 		void init(void);
 		int16_t acc_getAxesXRaw(void);
@@ -300,8 +292,8 @@ class LSM6DS0
 		int16_t gyro_getAxesZ(void);
 		float getGyroScale(void);
 		float getAccScale(void);
+	private:
 		int16_t readReg(int reg, byte num);
-		//int ReadID(byte);
-		void enableDefault(void);
+		int8_t readReg(int reg);
 		void writeReg(int reg, byte value);
-};
+};   

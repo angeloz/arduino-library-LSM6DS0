@@ -1,5 +1,5 @@
 #include <LSM6DS0.h>
-#include <Wire.h>
+
 
 #define address LSM6DS0_XG_MEMS_ADDRESS
 
